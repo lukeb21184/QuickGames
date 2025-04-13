@@ -1,0 +1,12 @@
+  ├── index.html          # Main hub
+  ├── style.css           # Shared styles
+  ├── script.js           # Shared JavaScript
+  ├── sounds/             # Sound effects
+  │    ├── click.mp3
+  │    ├── success.mp3
+  │    └── fail.mp3
+  ├── games/
+  │    ├── tap.html       # Tap game
+  │    ├── reaction.html  # Reaction game
+  │    └── word.html      # Word game
+  └── assets/             # Images/animations
