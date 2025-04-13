@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Game | MiniGame Mania</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        #word-display {
+            font-size: 2.5rem;
+            margin: 30px 0;
+            min-height: 60px;
+            letter-spacing: 3px;
+        }
+        
+        #input-field {
+            font-size: 1.5rem;
+            padding: 10px 15px;
+            width: 300px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        #input-field:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .word-item {
+            background: #e0e0e0;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        
+        .word-item.found {
+            background: #a5d6a7;
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Word Game</h1>
+        <p>Find all words that can be made from these letters:</p>
+        
+        <div id="word-display"></div>
+        
+        <input type="text" id="input-field" placeholder="Type a word...">
+        
+        <div class="stats">
+            <div class="stat-box">Time: <span id="time">60</span>s</div>
+            <div class="stat-box">Score: <span id="score">0</span></div>
+            <div class="stat-box">Words: <span id="found">0</span>/<span id="total">0</span></div>
+        </div>
+        
+        <div class="word-list" id="word-list"></div>
+        
+        <div class="button-group">
+            <button id="start-btn">Start Game</button>
+            <a href="../index.html" class="button">Return to Main Menu</a>
+        </div>
+    </div>
+    
+    <audio id="correct-sound" src="../sounds/success.mp3"></audio>
+    <audio id="wrong-sound" src="../sounds/fail.mp3"></audio>
+    <audio id="tick-sound" src="../sounds/click.mp3"></audio>
+    
+    <script>
+        const wordDisplay = document.getElementById('word-display');
+        const inputField = document.getElementById('input-field');
+        const startBtn = document.getElementById('start-btn');
+        const timeDisplay = document.getElementById('time');
+        const scoreDisplay = document.getElementById('score');
+        const foundDisplay = document.getElementById('found');
+        const totalDisplay = document.getElementById('total');
+        const wordList = document.getElementById('word-list');
+        const correctSound = document.getElementById('correct-sound');
+        const wrongSound = document.getElementById('wrong-sound');
+        const tickSound = document.getElementById('tick-sound');
+        
+        const wordLists = {
+            easy: ["apple", "pear", "pea", "ear", "are", "pal", "peal", "leap"],
+            medium: ["banana", "nab", "ban", "nan", "bann", "bana", "anna"],
+            hard: ["chocolate", "late", "cool", "heat", "cola", "echo", "latch"]
+        };
+        
+        let currentLetters = [];
+        let validWords = [];
+        let foundWords = [];
+        let score = 0;
+        let timeLeft = 60;
+        let timer;
+        let gameActive = false;
+        
+        startBtn.addEventListener('click', startGame);
+        inputField.addEventListener('keyup', checkWord);
+        
+        function startGame() {
+            // Reset game state
+            currentLetters = [];
+            validWords = [];
+            foundWords = [];
+            score = 0;
+            timeLeft = 60;
+            clearInterval(timer);
+            
+            // Select random word list
+            const difficulty = ['easy', 'medium', 'hard'][Math.floor(Math.random() * 3)];
+            const baseWord = Object.keys(wordLists)[Math.floor(Math.random() * Object.keys(wordLists).length)];
+            validWords = [...wordLists[difficulty]];
+            
+            // Scramble letters
+            currentLetters = shuffleArray(baseWord.split(''));
+            wordDisplay.textContent = currentLetters.join(' ');
+            
+            // Setup UI
+            inputField.value = '';
+            inputField.disabled = false;
+            inputField.focus();
+            scoreDisplay.textContent = '0';
+            foundDisplay.textContent = '0';
+            totalDisplay.textContent = validWords.length;
+            
+            // Render word list
+            renderWordList();
+            
+            // Start timer
+            gameActive = true;
+            timer = setInterval(updateTimer, 1000);
+            startBtn.disabled = true;
+        }
+        
+        function updateTimer() {
+            timeLeft--;
+            timeDisplay.textContent = timeLeft;
+            
+            if (timeLeft % 5 === 0) {
+                tickSound.currentTime = 0;
+                tickSound.play();
+            }
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+        
+        function checkWord(e) {
+            if (!gameActive || e.key !== 'Enter') return;
+            
+            const word = inputField.value.toLowerCase().trim();
+            
+            if (word.length < 3) {
+                showFeedback("Too short! (min 3 letters)", false);
+                return;
+            }
+            
+            if (foundWords.includes(word)) {
+                showFeedback("Already found!", false);
+                return;
+            }
+            
+            if (validWords.includes(word)) {
+                // Valid word found
+                foundWords.push(word);
+                score += word.length * 10;
+                
+                showFeedback(`+${word.length * 10} points!`, true);
+                correctSound.play();
+                
+                // Update displays
+                scoreDisplay.textContent = score;
+                foundDisplay.textContent = foundWords.length;
+                renderWordList();
+                
+                // Check if all words found
+                if (foundWords.length === validWords.length) {
+                    score += timeLeft * 5; // Time bonus
+                    endGame();
+                }
+            } else {
+                showFeedback("Not a valid word", false);
+                wrongSound.play();
+            }
+            
+            inputField.value = '';
+        }
+        
+        function showFeedback(message, isSuccess) {
+            const feedback = document.createElement('div');
+            feedback.textContent = message;
+            feedback.style.color = isSuccess ? '#4CAF50' : '#f44336';
+            feedback.style.margin = '10px 0';
+            feedback.style.fontWeight = 'bold';
+            feedback.style.animation = 'fadeOut 2s forwards';
+            
+            wordDisplay.insertAdjacentElement('afterend', feedback);
+            setTimeout(() => feedback.remove(), 2000);
+        }
+        
+        function renderWordList() {
+            wordList.innerHTML = '';
+            validWords.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.className = `word-item ${foundWords.includes(word) ? 'found' : ''}`;
+                wordElement.textContent = word;
+                wordList.appendChild(wordElement);
+            });
+        }
+        
+        function endGame() {
+            gameActive = false;
+            clearInterval(timer);
+            inputField.disabled = true;
+            startBtn.disabled = false;
+            
+            // Save to leaderboard
+            const leaderboard = JSON.parse(localStorage.getItem('wordLeaderboard') || []);
+            leaderboard.push({
+                date: new Date().toLocaleDateString(),
+                score: score,
+                wordsFound: foundWords.length,
+                totalWords: validWords.length
+            });
+            localStorage.setItem('wordLeaderboard', JSON.stringify(leaderboard));
+        }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>
