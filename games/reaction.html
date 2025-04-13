@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Test | MiniGame Mania</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        #reaction-box {
+            width: 300px;
+            height: 300px;
+            background: #f44336;
+            margin: 30px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+        
+        #reaction-box.waiting {
+            background: #ff9800;
+        }
+        
+        #reaction-box.ready {
+            background: #4CAF50;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Reaction Test</h1>
+        <p>Click when the box turns green!</p>
+        
+        <div class="stats">
+            <div class="stat-box">Average: <span id="average">0</span>ms</div>
+            <div class="stat-box">Best: <span id="best">0</span>ms</div>
+            <div class="stat-box">Round: <span id="round">0</span>/5</div>
+        </div>
+        
+        <div id="reaction-box" class="waiting">Wait for green...</div>
+        
+        <div class="button-group">
+            <button id="start-btn">Start Game</button>
+            <a href="../index.html" class="button">Return to Main Menu</a>
+        </div>
+    </div>
+    
+    <audio id="ready-sound" src="../sounds/click.mp3"></audio>
+    <audio id="success-sound" src="../sounds/success.mp3"></audio>
+    <audio id="fail-sound" src="../sounds/fail.mp3"></audio>
+    
+    <script>
+        const reactionBox = document.getElementById('reaction-box');
+        const startBtn = document.getElementById('start-btn');
+        const averageDisplay = document.getElementById('average');
+        const bestDisplay = document.getElementById('best');
+        const roundDisplay = document.getElementById('round');
+        const readySound = document.getElementById('ready-sound');
+        const successSound = document.getElementById('success-sound');
+        const failSound = document.getElementById('fail-sound');
+        
+        let reactionTimes = [];
+        let bestTime = Infinity;
+        let round = 0;
+        let startTime;
+        let timeoutId;
+        let gameActive = false;
+        
+        startBtn.addEventListener('click', startGame);
+        reactionBox.addEventListener('click', handleReactionClick);
+        
+        function startGame() {
+            reactionTimes = [];
+            bestTime = Infinity;
+            round = 0;
+            gameActive = true;
+            updateDisplays();
+            startRound();
+        }
+        
+        function startRound() {
+            if (round >= 5) {
+                endGame();
+                return;
+            }
+            
+            reactionBox.className = 'waiting';
+            reactionBox.textContent = 'Wait for green...';
+            startBtn.disabled = true;
+            
+            // Random delay between 1-5 seconds
+            const delay = 1000 + Math.random() * 4000;
+            
+            timeoutId = setTimeout(() => {
+                reactionBox.className = 'ready';
+                reactionBox.textContent = 'CLICK NOW!';
+                startTime = Date.now();
+                readySound.play();
+            }, delay);
+        }
+        
+        function handleReactionClick() {
+            if (!gameActive) return;
+            
+            if (reactionBox.className === 'ready') {
+                const reactionTime = Date.now() - startTime;
+                reactionTimes.push(reactionTime);
+                bestTime = Math.min(bestTime, reactionTime);
+                round++;
+                updateDisplays();
+                successSound.play();
+                startRound();
+            } else if (gameActive) {
+                // Clicked too early
+                clearTimeout(timeoutId);
+                reactionBox.className = 'waiting';
+                reactionBox.textContent = 'Too early!';
+                failSound.play();
+                setTimeout(() => startRound(), 1000);
+            }
+        }
+        
+        function updateDisplays() {
+            const average = reactionTimes.length > 0 ? 
+                Math.round(reactionTimes.reduce((a,b) => a + b) / reactionTimes.length) : 0;
+            
+            averageDisplay.textContent = average;
+            bestDisplay.textContent = bestTime === Infinity ? 0 : bestTime;
+            roundDisplay.textContent = round;
+        }
+        
+        function endGame() {
+            gameActive = false;
+            reactionBox.className = 'waiting';
+            reactionBox.textContent = 'Game Over!';
+            startBtn.disabled = false;
+            startBtn.textContent = 'Play Again';
+            
+            // Save to leaderboard
+            if (bestTime !== Infinity) {
+                const leaderboard = JSON.parse(localStorage.getItem('reactionLeaderboard') || []);
+                leaderboard.push({
+                    date: new Date().toLocaleDateString(),
+                    bestTime: bestTime,
+                    average: Math.round(reactionTimes.reduce((a,b) => a + b) / reactionTimes.length)
+                });
+                localStorage.setItem('reactionLeaderboard', JSON.stringify(leaderboard));
+            }
+        }
+    </script>
+</body>
+</html>
