@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniGame Mania</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>MiniGame Mania</h1>
+        <p id="week-indicator">Week 1: Tap Challenges</p>
+    </header>
+    
+    <div class="game-grid">
+        <a href="games/tap.html" class="game-tile pulse">
+            <h2>Tap Challenge</h2>
+            <p>How fast can you tap?</p>
+        </a>
+        
+        <a href="games/reaction.html" class="game-tile pulse">
+            <h2>Reaction Test</h2>
+            <p>Test your reflexes</p>
+        </a>
+        
+        <a href="games/word.html" class="game-tile pulse">
+            <h2>Word Game</h2>
+            <p>Find words quickly</p>
+        </a>
+    </div>
+    
+    <div class="leaderboard">
+        <h3>Weekly Leaderboard</h3>
+        <ol id="leaderboard-list">
+            <li>Player1 - 250 pts</li>
+            <li>Player2 - 200 pts</li>
+            <li>Player3 - 180 pts</li>
+        </ol>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
